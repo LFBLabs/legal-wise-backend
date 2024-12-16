@@ -4,7 +4,11 @@ if (!process.env.MONGODB_URI) {
     throw new Error('Please define the MONGODB_URI environment variable inside .env');
 }
 
-const MONGODB_URI = process.env.MONGODB_URI;
+// Add TLS parameters to URI if not already present
+const MONGODB_URI = process.env.MONGODB_URI.includes('?') ? 
+    process.env.MONGODB_URI + '&tls=true&tlsAllowInvalidCertificates=true' :
+    process.env.MONGODB_URI + '?tls=true&tlsAllowInvalidCertificates=true';
+
 let cachedClient = null;
 let cachedDb = null;
 
@@ -23,9 +27,7 @@ export async function connectToDatabase() {
             socketTimeoutMS: 5000,
             serverSelectionTimeoutMS: 5000,
             maxPoolSize: 10,
-            minPoolSize: 5,
-            tls: true,
-            tlsAllowInvalidCertificates: true // Allow self-signed certificates
+            minPoolSize: 5
         });
 
         const db = client.db('Paystack-subscriptions');
