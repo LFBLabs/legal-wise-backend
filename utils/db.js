@@ -1,16 +1,35 @@
 import { MongoClient } from 'mongodb';
 
+if (!process.env.MONGODB_URI) {
+    throw new Error('Please define the MONGODB_URI environment variable inside .env');
+}
+
 const MONGODB_URI = process.env.MONGODB_URI;
+let cachedClient = null;
 let cachedDb = null;
 
 export async function connectToDatabase() {
-    if (cachedDb) {
+    // If we have a cached connection, use it
+    if (cachedClient && cachedDb) {
         return cachedDb;
     }
 
-    const client = await MongoClient.connect(MONGODB_URI);
-    const db = client.db('legal-wise');
-    
-    cachedDb = db;
-    return db;
+    try {
+        // If no connection, create a new one
+        const client = await MongoClient.connect(MONGODB_URI, {
+            useNewUrlParser: true,
+            useUnifiedTopology: true,
+        });
+
+        const db = client.db('legal-wise');
+
+        // Cache the client and db connection
+        cachedClient = client;
+        cachedDb = db;
+
+        return db;
+    } catch (error) {
+        console.error('MongoDB connection error:', error);
+        throw new Error('Unable to connect to database');
+    }
 }
