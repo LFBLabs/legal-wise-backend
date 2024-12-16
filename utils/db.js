@@ -12,6 +12,11 @@ uri.searchParams.set('retryWrites', 'true');
 uri.searchParams.set('w', 'majority');
 
 const MONGODB_URI = uri.toString();
+
+// Log the URI format (without sensitive info)
+const redactedUri = MONGODB_URI.replace(/\/\/[^@]+@/, '//[REDACTED]@');
+console.log('MongoDB URI format:', redactedUri);
+
 let cachedClient = null;
 let cachedDb = null;
 
