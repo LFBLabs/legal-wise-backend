@@ -31,19 +31,29 @@ export default async function handler(req, res) {
         }
 
         console.log('Verifying subscription for email:', email);
-        console.log('Connecting to database...');
 
-        const db = await connectToDatabase();
-        console.log('Database connected successfully');
+        // Add timeout to database operations
+        const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Database operation timed out')), 8000)
+        );
 
-        console.log('Querying subscriptions collection...');
-        const subscription = await db.collection('subscriptions').findOne({
-            email: email.toLowerCase(),
-            status: 'active',
-            expiryDate: { $gt: new Date() }
-        });
+        const dbOperation = async () => {
+            console.log('Connecting to database...');
+            const db = await connectToDatabase();
 
-        console.log('Subscription query result:', subscription);
+            console.log('Querying subscriptions collection...');
+            const subscription = await db.collection('subscriptions').findOne({
+                email: email.toLowerCase(),
+                status: 'active',
+                expiryDate: { $gt: new Date() }
+            });
+
+            console.log('Subscription query result:', subscription);
+            return subscription;
+        };
+
+        // Race between timeout and database operation
+        const subscription = await Promise.race([dbOperation(), timeoutPromise]);
 
         if (!subscription) {
             console.log('No active subscription found');
@@ -58,6 +68,15 @@ export default async function handler(req, res) {
         });
     } catch (error) {
         console.error('Error in verify-subscription:', error);
+        
+        // Handle specific error types
+        if (error.message === 'Database operation timed out') {
+            return res.status(504).json({ 
+                error: 'Gateway Timeout', 
+                message: 'Database operation timed out'
+            });
+        }
+
         return res.status(500).json({ 
             error: 'Internal server error', 
             details: error.message,
