@@ -1,0 +1,15 @@
+{
+  "name": "legal-wise-backend",
+  "version": "1.0.0",
+  "description": "Backend service for Legal Wise Summarizer Chrome extension",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vercel dev",
+    "deploy": "vercel deploy --prod"
+  },
+  "dependencies": {
+    "@vercel/node": "^3.0.0",
+    "mongoose": "^7.0.0",
+    "crypto": "^1.0.1"
+  }
+}
