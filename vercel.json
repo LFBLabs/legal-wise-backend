@@ -5,9 +5,5 @@
     ],
     "routes": [
         { "src": "/api/(.*)", "dest": "/api/$1" }
-    ],
-    "env": {
-        "MONGODB_URI": "@mongodb-uri",
-        "PAYSTACK_SECRET_KEY": "@paystack-secret-key"
-    }
+    ]
 }
