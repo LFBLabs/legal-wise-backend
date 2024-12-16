@@ -24,11 +24,8 @@ export async function connectToDatabase() {
             serverSelectionTimeoutMS: 5000,
             maxPoolSize: 10,
             minPoolSize: 5,
-            ssl: true,
             tls: true,
-            tlsAllowInvalidCertificates: false,
-            tlsAllowInvalidHostnames: false,
-            tlsInsecure: false
+            tlsAllowInvalidCertificates: true // Allow self-signed certificates
         });
 
         const db = client.db('Paystack-subscriptions');
