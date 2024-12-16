@@ -3,35 +3,32 @@ import { connectToDatabase } from '../utils/db';
 
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
 
-function verifyPaystackWebhook(req) {
-    const hash = crypto
-        .createHmac('sha512', PAYSTACK_SECRET_KEY)
-        .update(JSON.stringify(req.body))
-        .digest('hex');
-    
-    return hash === req.headers['x-paystack-signature'];
-}
-
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
     try {
+        const event = req.body;
+        console.log('Received webhook event:', event);
+
         // Verify webhook signature
-        if (!verifyPaystackWebhook(req)) {
+        const hash = crypto
+            .createHmac('sha512', PAYSTACK_SECRET_KEY)
+            .update(JSON.stringify(req.body))
+            .digest('hex');
+        
+        if (hash !== req.headers['x-paystack-signature']) {
             return res.status(401).json({ error: 'Invalid signature' });
         }
 
-        const { event, data } = req.body;
-
         // Only process successful charge events
-        if (event === 'charge.success') {
+        if (event.event === 'charge.success') {
             const db = await connectToDatabase();
             
             // Calculate expiry date based on plan
             const expiryDate = new Date();
-            const plan = data.metadata?.plan || 'monthly';
+            const plan = event.data.metadata?.plan || 'monthly';
             
             if (plan === 'annual') {
                 expiryDate.setFullYear(expiryDate.getFullYear() + 1);
@@ -41,22 +38,24 @@ export default async function handler(req, res) {
 
             // Update or create subscription
             await db.collection('subscriptions').updateOne(
-                { email: data.customer.email.toLowerCase() },
+                { email: event.data.customer.email.toLowerCase() },
                 {
                     $set: {
-                        email: data.customer.email.toLowerCase(),
+                        email: event.data.customer.email.toLowerCase(),
                         plan: plan,
                         status: 'active',
                         expiryDate: expiryDate,
                         lastPayment: {
-                            reference: data.reference,
-                            amount: data.amount,
+                            reference: event.data.reference,
+                            amount: event.data.amount,
                             date: new Date()
                         }
                     }
                 },
                 { upsert: true }
             );
+
+            console.log('Subscription updated for:', event.data.customer.email);
         }
 
         return res.status(200).json({ received: true });
