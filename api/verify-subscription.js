@@ -20,35 +20,48 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
+    console.log('Starting subscription verification...');
+
     try {
         const { email } = req.body;
         
         if (!email) {
+            console.log('No email provided in request');
             return res.status(400).json({ error: 'Email is required' });
         }
 
         console.log('Verifying subscription for email:', email);
+        console.log('Connecting to database...');
 
         const db = await connectToDatabase();
+        console.log('Database connected successfully');
+
+        console.log('Querying subscriptions collection...');
         const subscription = await db.collection('subscriptions').findOne({
             email: email.toLowerCase(),
             status: 'active',
             expiryDate: { $gt: new Date() }
         });
 
-        console.log('Subscription found:', subscription);
+        console.log('Subscription query result:', subscription);
 
         if (!subscription) {
+            console.log('No active subscription found');
             return res.json({ active: false });
         }
 
+        console.log('Active subscription found, returning details');
         return res.json({
             active: true,
             plan: subscription.plan,
             expiryDate: subscription.expiryDate
         });
     } catch (error) {
-        console.error('Error verifying subscription:', error);
-        return res.status(500).json({ error: 'Internal server error', details: error.message });
+        console.error('Error in verify-subscription:', error);
+        return res.status(500).json({ 
+            error: 'Internal server error', 
+            details: error.message,
+            stack: error.stack 
+        });
     }
 }

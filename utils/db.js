@@ -21,7 +21,7 @@ export async function connectToDatabase() {
             useUnifiedTopology: true,
         });
 
-        const db = client.db('legal-wise');
+        const db = client.db('Paystack-subscriptions');
 
         // Cache the client and db connection
         cachedClient = client;
@@ -30,6 +30,6 @@ export async function connectToDatabase() {
         return db;
     } catch (error) {
         console.error('MongoDB connection error:', error);
-        throw new Error('Unable to connect to database');
+        throw new Error('Unable to connect to database: ' + error.message);
     }
 }
