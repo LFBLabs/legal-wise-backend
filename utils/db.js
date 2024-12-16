@@ -4,14 +4,8 @@ if (!process.env.MONGODB_URI) {
     throw new Error('Please define the MONGODB_URI environment variable inside .env');
 }
 
-// Parse and reconstruct the URI with updated options
-const uri = new URL(process.env.MONGODB_URI);
-uri.searchParams.set('tls', 'true');
-uri.searchParams.set('tlsAllowInvalidCertificates', 'true');
-uri.searchParams.set('retryWrites', 'true');
-uri.searchParams.set('w', 'majority');
-
-const MONGODB_URI = uri.toString();
+// Ensure the URI has the correct format
+const MONGODB_URI = process.env.MONGODB_URI.replace('?', '/?').replace('??', '?');
 
 // Log the URI format (without sensitive info)
 const redactedUri = MONGODB_URI.replace(/\/\/[^@]+@/, '//[REDACTED]@');
@@ -37,7 +31,10 @@ export async function connectToDatabase() {
             socketTimeoutMS: 10000,
             serverSelectionTimeoutMS: 10000,
             maxPoolSize: 10,
-            minPoolSize: 5
+            minPoolSize: 5,
+            ssl: true,
+            tls: true,
+            tlsAllowInvalidCertificates: true
         });
 
         console.log('MongoDB client connected');
