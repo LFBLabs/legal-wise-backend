@@ -4,8 +4,13 @@ if (!process.env.MONGODB_URI) {
     throw new Error('Please define the MONGODB_URI environment variable inside .env');
 }
 
+// Add database name to URI if not present
+const MONGODB_URI = process.env.MONGODB_URI.includes('/Paystack-subscriptions?') ? 
+    process.env.MONGODB_URI : 
+    process.env.MONGODB_URI.replace('/?', '/Paystack-subscriptions?');
+
 // Log the URI format (without sensitive info)
-const redactedUri = process.env.MONGODB_URI.replace(/\/\/[^@]+@/, '//[REDACTED]@');
+const redactedUri = MONGODB_URI.replace(/\/\/[^@]+@/, '//[REDACTED]@');
 console.log('MongoDB URI format:', redactedUri);
 
 let cachedClient = null;
@@ -20,8 +25,12 @@ export async function connectToDatabase() {
     try {
         console.log('Attempting to connect to MongoDB...');
         
-        // If no connection, create a new one
-        const client = await MongoClient.connect(process.env.MONGODB_URI);
+        // Connect with minimal options
+        const client = await MongoClient.connect(MONGODB_URI, {
+            serverSelectionTimeoutMS: 5000,
+            connectTimeoutMS: 5000,
+            socketTimeoutMS: 5000
+        });
 
         console.log('MongoDB client connected');
 
