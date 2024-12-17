@@ -26,12 +26,24 @@ export default async function handler(req, res) {
     }
 
     try {
-        console.log('Initializing payment with data:', {
+        const paymentData = {
             email,
-            amount,
-            plan,
-            planId: plan === 'monthly' ? 'PLN_qwa0am0k0i5jg3c' : 'PLN_rvzz5oylqsq8uyi'
-        });
+            amount: amount * 100, // Convert to kobo/cents
+            currency: 'ZAR',
+            callback_url: 'https://legal-wise-backend.vercel.app/api/payment-callback',
+            metadata: {
+                email,
+                plan,
+                product: 'Legal Wise Summarizer'
+            }
+        };
+
+        // Only add plan if it's a subscription
+        if (plan === 'monthly' || plan === 'annual') {
+            paymentData.plan = plan === 'monthly' ? 'PLN_qwa0am0k0i5jg3c' : 'PLN_rvzz5oylqsq8uyi';
+        }
+
+        console.log('Initializing payment with data:', JSON.stringify(paymentData, null, 2));
 
         // Initialize payment with Paystack
         const response = await fetch('https://api.paystack.co/transaction/initialize', {
@@ -40,30 +52,26 @@ export default async function handler(req, res) {
                 'Authorization': `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({
-                email,
-                amount: amount * 100, // Convert to kobo/cents
-                currency: 'ZAR',
-                plan: plan === 'monthly' ? 'PLN_qwa0am0k0i5jg3c' : 'PLN_rvzz5oylqsq8uyi',
-                callback_url: 'https://legal-wise-backend.vercel.app/api/payment-callback',
-                metadata: {
-                    email,
-                    plan,
-                    product: 'Legal Wise Summarizer'
-                }
-            })
+            body: JSON.stringify(paymentData)
         });
 
         const data = await response.json();
+        console.log('Paystack response:', JSON.stringify(data, null, 2));
         
         if (!response.ok) {
-            console.error('Paystack error details:', data);
-            return res.status(response.status).json({ error: data.message || 'Payment initialization failed' });
+            console.error('Paystack error details:', JSON.stringify(data, null, 2));
+            return res.status(response.status).json({ 
+                error: data.message || 'Payment initialization failed',
+                details: data 
+            });
         }
 
         return res.json(data);
     } catch (error) {
         console.error('Error initializing payment:', error);
-        return res.status(500).json({ error: error.message || 'Internal server error' });
+        return res.status(500).json({ 
+            error: error.message || 'Internal server error',
+            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        });
     }
 }
