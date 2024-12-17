@@ -26,6 +26,13 @@ export default async function handler(req, res) {
     }
 
     try {
+        console.log('Initializing payment with data:', {
+            email,
+            amount,
+            plan,
+            planId: plan === 'monthly' ? 'PLN_qwa0am0k0i5jg3c' : 'PLN_rvzz5oylqsq8uyi'
+        });
+
         // Initialize payment with Paystack
         const response = await fetch('https://api.paystack.co/transaction/initialize', {
             method: 'POST',
@@ -35,9 +42,9 @@ export default async function handler(req, res) {
             },
             body: JSON.stringify({
                 email,
-                amount,
+                amount: amount * 100, // Convert to kobo/cents
                 currency: 'ZAR',
-                plan: plan === 'monthly' ? 'PLN_qwa0am0k0i5jg3c' : 'PLN_rvzz5oylqsq8uyi', 
+                plan: plan === 'monthly' ? 'PLN_qwa0am0k0i5jg3c' : 'PLN_rvzz5oylqsq8uyi',
                 callback_url: 'https://legal-wise-backend.vercel.app/api/payment-callback',
                 metadata: {
                     email,
@@ -50,13 +57,13 @@ export default async function handler(req, res) {
         const data = await response.json();
         
         if (!response.ok) {
-            console.error('Paystack error:', data);
-            return res.status(response.status).json({ error: data.message });
+            console.error('Paystack error details:', data);
+            return res.status(response.status).json({ error: data.message || 'Payment initialization failed' });
         }
 
         return res.json(data);
     } catch (error) {
         console.error('Error initializing payment:', error);
-        return res.status(500).json({ error: 'Internal server error' });
+        return res.status(500).json({ error: error.message || 'Internal server error' });
     }
 }
