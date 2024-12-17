@@ -37,6 +37,7 @@ export default async function handler(req, res) {
                 email,
                 amount,
                 currency: 'ZAR',
+                plan: plan === 'monthly' ? 'PLN_qwa0am0k0i5jg3c' : 'PLN_rvzz5oylqsq8uyi', 
                 callback_url: 'https://legal-wise-backend.vercel.app/api/payment-callback',
                 metadata: {
                     email,
