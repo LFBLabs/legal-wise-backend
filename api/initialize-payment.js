@@ -38,11 +38,6 @@ export default async function handler(req, res) {
             }
         };
 
-        // Only add plan if it's a subscription
-        if (plan === 'monthly' || plan === 'annual') {
-            paymentData.plan = plan === 'monthly' ? 'PLN_qwa0am0k0i5jg3c' : 'PLN_rvzz5oylqsq8uyi';
-        }
-
         console.log('Initializing payment with data:', JSON.stringify(paymentData, null, 2));
 
         // Initialize payment with Paystack
