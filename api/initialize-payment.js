@@ -20,17 +20,20 @@ export default async function handler(req, res) {
     }
 
     const { email, amount, plan } = req.body;
+    console.log('Received request with:', { email, amount, plan });
 
-    if (!email || !amount || !plan) {
+    if (!email || !plan) {
         return res.status(400).json({ error: 'Missing required fields' });
     }
 
     try {
+        // Get plan code based on plan type
+        const planCode = plan === 'monthly' ? 'PLN_0n02r3xe590nhm5' : 'PLN_ghrxb3r46xgoip0';
+        console.log('Using plan code:', planCode, 'for plan type:', plan);
+
         const paymentData = {
             email,
-            amount: amount * 100, // Convert to kobo/cents
-            currency: 'ZAR',
-            plan: plan === 'monthly' ? 'PLN_0n02r3xe590nhm5' : 'PLN_ghrxb3r46xgoip0', // Monthly and Annual plan codes
+            plan: planCode,
             callback_url: 'https://legal-wise-backend.vercel.app/api/payment-callback',
             metadata: {
                 email,
