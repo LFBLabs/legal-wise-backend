@@ -30,7 +30,7 @@ export default async function handler(req, res) {
             email,
             amount: amount * 100, // Convert to kobo/cents
             currency: 'ZAR',
-            plan: plan === 'monthly' ? 'PLN_qwa0am0k0i5jg3c' : 'PLN_rvzz5oylqsq8uyi', // Your plan codes
+            plan: plan === 'monthly' ? 'PLN_0n02r3xe590nhm5' : 'PLN_ghrxb3r46xgoip0', // Monthly and Annual plan codes
             callback_url: 'https://legal-wise-backend.vercel.app/api/payment-callback',
             metadata: {
                 email,
