@@ -30,6 +30,7 @@ export default async function handler(req, res) {
             email,
             amount: amount * 100, // Convert to kobo/cents
             currency: 'ZAR',
+            plan: plan === 'monthly' ? 'PLN_qwa0am0k0i5jg3c' : 'PLN_rvzz5oylqsq8uyi', // Your plan codes
             callback_url: 'https://legal-wise-backend.vercel.app/api/payment-callback',
             metadata: {
                 email,
@@ -38,9 +39,9 @@ export default async function handler(req, res) {
             }
         };
 
-        console.log('Initializing payment with data:', JSON.stringify(paymentData, null, 2));
+        console.log('Initializing subscription with data:', JSON.stringify(paymentData, null, 2));
 
-        // Initialize payment with Paystack
+        // Initialize subscription with Paystack
         const response = await fetch('https://api.paystack.co/transaction/initialize', {
             method: 'POST',
             headers: {
