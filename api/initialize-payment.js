@@ -1,87 +1,58 @@
 export const config = {
-    runtime: 'edge',
+    runtime: 'nodejs',
     regions: ['fra1'], // Deploy to Frankfurt for lower latency
 };
 
-export default async function handler(req) {
+export default async function handler(req, res) {
     console.log('Received request headers:', req.headers);
     
-    // Handle CORS preflight
-    const headers = {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-api-key',
-        'Access-Control-Allow-Credentials': 'true',
-    };
+    // Enable CORS
+    res.setHeader('Access-Control-Allow-Credentials', true);
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader(
+        'Access-Control-Allow-Headers',
+        'Content-Type, Authorization, x-api-key'
+    );
 
-    // Handle preflight request
+    // Handle OPTIONS request
     if (req.method === 'OPTIONS') {
-        return new Response(null, { 
-            status: 204,
-            headers 
-        });
+        res.status(200).end();
+        return;
     }
 
     if (req.method !== 'POST') {
-        return new Response(
-            JSON.stringify({ error: 'Method not allowed' }), 
-            { 
-                status: 405,
-                headers: {
-                    ...headers,
-                    'Content-Type': 'application/json'
-                }
-            }
-        );
+        return res.status(405).json({ error: 'Method not allowed' });
     }
 
     // Validate API key
-    const apiKey = req.headers.get('x-api-key');
+    const apiKey = req.headers['x-api-key'] || req.headers['X-API-KEY'];
     const expectedApiKey = process.env.API_KEY;
     
     console.log('API Key validation:', {
         receivedKey: apiKey,
         expectedKey: expectedApiKey,
-        headerKeys: Array.from(req.headers.keys()),
+        headerKeys: Object.keys(req.headers),
         match: apiKey === expectedApiKey
     });
     
     if (!apiKey || apiKey !== expectedApiKey) {
         console.log('Invalid or missing API key');
-        return new Response(
-            JSON.stringify({ 
-                error: 'Unauthorized',
-                message: 'Invalid or missing API key',
-                debug: {
-                    hasApiKey: !!apiKey,
-                    keyMatch: apiKey === expectedApiKey
-                }
-            }), 
-            { 
-                status: 401,
-                headers: {
-                    ...headers,
-                    'Content-Type': 'application/json'
-                }
+        return res.status(401).json({ 
+            error: 'Unauthorized',
+            message: 'Invalid or missing API key',
+            debug: {
+                hasApiKey: !!apiKey,
+                keyMatch: apiKey === expectedApiKey
             }
-        );
+        });
     }
 
     try {
-        const body = await req.json();
-        const { email, plan, amount } = body;
+        const { email, plan, amount } = req.body;
 
         if (!email || !plan || !amount) {
-            return new Response(
-                JSON.stringify({ error: 'Missing required fields' }), 
-                { 
-                    status: 400,
-                    headers: {
-                        ...headers,
-                        'Content-Type': 'application/json'
-                    }
-                }
-            );
+            return res.status(400).json({ error: 'Missing required fields' });
         }
 
         // Initialize payment with Paystack
@@ -103,45 +74,18 @@ export default async function handler(req) {
 
         if (!paystackResponse.ok) {
             console.error('Paystack error:', paystackData);
-            return new Response(
-                JSON.stringify({ 
-                    error: 'Failed to initialize payment',
-                    details: paystackData.message
-                }), 
-                { 
-                    status: paystackResponse.status,
-                    headers: {
-                        ...headers,
-                        'Content-Type': 'application/json'
-                    }
-                }
-            );
+            return res.status(paystackResponse.status).json({ 
+                error: 'Failed to initialize payment',
+                details: paystackData.message
+            });
         }
 
-        return new Response(
-            JSON.stringify(paystackData), 
-            { 
-                status: 200,
-                headers: {
-                    ...headers,
-                    'Content-Type': 'application/json'
-                }
-            }
-        );
+        return res.status(200).json(paystackData);
     } catch (error) {
         console.error('Error:', error);
-        return new Response(
-            JSON.stringify({ 
-                error: 'Internal server error',
-                message: error.message
-            }), 
-            { 
-                status: 500,
-                headers: {
-                    ...headers,
-                    'Content-Type': 'application/json'
-                }
-            }
-        );
+        return res.status(500).json({ 
+            error: 'Internal server error',
+            message: error.message
+        });
     }
 }
