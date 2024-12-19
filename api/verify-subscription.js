@@ -9,12 +9,12 @@ export const config = {
 export default async function handler(req, res) {
     // Log all environment variables (except sensitive ones)
     console.log('Environment variables:', {
-        hasMongoDb: !!import.meta.env.MONGODB_URI,
-        hasPaystackKey: !!import.meta.env.PAYSTACK_SECRET_KEY,
-        hasApiKey: !!import.meta.env.API_KEY,
-        apiKeyValue: import.meta.env.API_KEY,
-        nodeEnv: import.meta.env.NODE_ENV,
-        vercelEnv: import.meta.env.VERCEL_ENV
+        hasMongoDb: !!process.env.MONGODB_URI,
+        hasPaystackKey: !!process.env.PAYSTACK_SECRET_KEY,
+        hasApiKey: !!process.env.API_KEY,
+        apiKeyValue: process.env.API_KEY,
+        nodeEnv: process.env.NODE_ENV,
+        vercelEnv: process.env.VERCEL_ENV
     });
 
     console.log('Received request headers:', JSON.stringify(req.headers, null, 2));
@@ -41,7 +41,7 @@ export default async function handler(req, res) {
     // Validate API key - check header in a case-insensitive way
     const apiKeyHeader = Object.keys(req.headers).find(key => key.toLowerCase() === 'x-api-key');
     const apiKey = apiKeyHeader ? req.headers[apiKeyHeader] : null;
-    const expectedApiKey = import.meta.env.API_KEY;
+    const expectedApiKey = process.env.API_KEY;
     
     console.log('API Key validation:', {
         receivedKey: apiKey,
