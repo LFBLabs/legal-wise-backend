@@ -1,7 +1,17 @@
 import { connectToDatabase } from '../utils/db';
 
 export default async function handler(req, res) {
-    console.log('Received request headers:', req.headers);
+    // Log all environment variables (except sensitive ones)
+    console.log('Environment variables:', {
+        hasMongoDb: !!process.env.MONGODB_URI,
+        hasPaystackKey: !!process.env.PAYSTACK_SECRET_KEY,
+        hasApiKey: !!process.env.API_KEY,
+        apiKeyValue: process.env.API_KEY,
+        nodeEnv: process.env.NODE_ENV,
+        vercelEnv: process.env.VERCEL_ENV
+    });
+
+    console.log('Received request headers:', JSON.stringify(req.headers, null, 2));
 
     // Enable CORS
     res.setHeader('Access-Control-Allow-Credentials', true);
