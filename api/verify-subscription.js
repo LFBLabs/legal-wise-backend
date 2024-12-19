@@ -22,14 +22,16 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
-    // Validate API key
-    const apiKey = req.headers['x-api-key'] || req.headers['X-API-KEY'];
+    // Validate API key - check header in a case-insensitive way
+    const apiKeyHeader = Object.keys(req.headers).find(key => key.toLowerCase() === 'x-api-key');
+    const apiKey = apiKeyHeader ? req.headers[apiKeyHeader] : null;
     const expectedApiKey = process.env.API_KEY;
     
     console.log('API Key validation:', {
         receivedKey: apiKey,
         expectedKey: expectedApiKey,
         headerKeys: Object.keys(req.headers),
+        foundHeader: apiKeyHeader,
         match: apiKey === expectedApiKey
     });
     
