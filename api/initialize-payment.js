@@ -1,5 +1,4 @@
 export const config = {
-    runtime: 'nodejs',
     regions: ['fra1'], // Deploy to Frankfurt for lower latency
 };
 

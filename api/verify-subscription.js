@@ -2,10 +2,6 @@ import { connectToDatabase } from '../utils/db';
 
 export default async function handler(req, res) {
     console.log('Received request headers:', req.headers);
-    console.log('Environment variables:', {
-        hasApiKey: !!process.env.API_KEY,
-        apiKeyLength: process.env.API_KEY ? process.env.API_KEY.length : 0
-    });
 
     // Enable CORS
     res.setHeader('Access-Control-Allow-Credentials', true);
