@@ -5,11 +5,15 @@
   "main": "index.js",
   "scripts": {
     "dev": "vercel dev",
-    "deploy": "vercel deploy --prod"
+    "deploy": "vercel deploy --prod",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
     "@vercel/node": "^3.0.0",
     "mongoose": "^7.0.0",
     "crypto": "^1.0.1"
+  },
+  "engines": {
+    "node": "18.x"
   }
 }

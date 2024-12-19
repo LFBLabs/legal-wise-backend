@@ -1,51 +1,75 @@
-import { connectToDatabase } from '../utils/db';
+export const config = {
+    runtime: 'edge',
+    regions: ['fra1'], // Deploy to Frankfurt for lower latency
+};
 
 export default async function handler(req, res) {
-    // Enable CORS
-    res.setHeader('Access-Control-Allow-Credentials', true);
+    // Handle CORS preflight
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
-    res.setHeader(
-        'Access-Control-Allow-Headers',
-        'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
-    );
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type, Accept, Authorization, x-api-key');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
 
+    // Handle preflight request
     if (req.method === 'OPTIONS') {
         res.status(200).end();
         return;
     }
 
+    // Only allow POST requests
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
-    const { email, plan } = req.body;
-    console.log('Received request with:', { email, plan });
-
-    if (!email || !plan) {
-        return res.status(400).json({ error: 'Missing required fields' });
+    // Validate API key
+    const apiKey = req.headers['x-api-key'];
+    const expectedApiKey = process.env.API_KEY;
+    
+    console.log('Received API key:', apiKey);
+    console.log('Expected API key:', expectedApiKey);
+    
+    if (!apiKey || apiKey !== expectedApiKey) {
+        console.log('Invalid or missing API key');
+        return res.status(401).json({ error: 'Unauthorized' });
     }
 
     try {
-        // Get plan code based on plan type
-        const planCode = plan === 'monthly' ? 'PLN_0n02r3xe590nhm5' : 'PLN_ghrxb3r46xgoip0';
-        console.log('Using plan code:', planCode, 'for plan type:', plan);
+        const { email, plan } = req.body;
+        console.log('Received payment request:', { email, plan });
 
+        if (!email || !plan) {
+            return res.status(400).json({ error: 'Missing required fields' });
+        }
+
+        if (!process.env.PAYSTACK_SECRET_KEY) {
+            console.error('Paystack secret key is missing');
+            return res.status(500).json({ error: 'Payment service configuration error' });
+        }
+
+        // Calculate amount in kobo (smallest currency unit)
+        const amount = plan === 'monthly' ? 9000 : 91800; // R90 = 9000 kobo, R918 = 91800 kobo
+
+        // Initialize transaction with test values
         const paymentData = {
             email,
-            plan: planCode,
+            amount,
+            currency: 'ZAR',
             callback_url: 'https://legal-wise-backend.vercel.app/api/payment-callback',
+            channels: ['card'],
             metadata: {
-                email,
-                plan,
-                product: 'Legal Wise Summarizer'
+                custom_fields: [
+                    {
+                        display_name: "Plan Type",
+                        variable_name: "plan_type",
+                        value: plan
+                    }
+                ]
             }
         };
 
-        console.log('Initializing subscription with data:', JSON.stringify(paymentData, null, 2));
+        console.log('Initializing Paystack payment:', paymentData);
 
-        // Initialize subscription with Paystack
-        const response = await fetch('https://api.paystack.co/transaction/initialize', {
+        const initResponse = await fetch('https://api.paystack.co/transaction/initialize', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
@@ -54,21 +78,28 @@ export default async function handler(req, res) {
             body: JSON.stringify(paymentData)
         });
 
-        const data = await response.json();
-        console.log('Paystack response:', JSON.stringify(data, null, 2));
-        
-        if (!response.ok) {
-            console.error('Paystack error details:', JSON.stringify(data, null, 2));
-            return res.status(response.status).json({ 
-                error: data.message || 'Payment initialization failed',
-                details: data 
+        const responseText = await initResponse.text();
+        let responseData;
+        try {
+            responseData = JSON.parse(responseText);
+        } catch (e) {
+            console.error('Failed to parse Paystack response:', responseText);
+            return res.status(500).json({ error: 'Invalid response from payment provider' });
+        }
+
+        if (!initResponse.ok) {
+            console.error('Paystack error response:', responseData);
+            return res.status(initResponse.status).json({
+                error: 'Payment initialization failed',
+                details: responseData
             });
         }
 
-        return res.json(data);
+        console.log('Paystack success response:', responseData);
+        return res.status(200).json(responseData);
     } catch (error) {
-        console.error('Error initializing payment:', error);
-        return res.status(500).json({ 
+        console.error('Error in payment initialization:', error);
+        return res.status(500).json({
             error: error.message || 'Internal server error',
             stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
         });

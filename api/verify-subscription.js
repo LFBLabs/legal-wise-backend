@@ -1,13 +1,19 @@
 import { connectToDatabase } from '../utils/db';
 
 export default async function handler(req, res) {
+    console.log('Received request headers:', req.headers);
+    console.log('Environment variables:', {
+        hasApiKey: !!process.env.API_KEY,
+        apiKeyLength: process.env.API_KEY ? process.env.API_KEY.length : 0
+    });
+
     // Enable CORS
     res.setHeader('Access-Control-Allow-Credentials', true);
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
     res.setHeader(
         'Access-Control-Allow-Headers',
-        'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
+        'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, x-api-key'
     );
 
     // Handle OPTIONS request
@@ -18,6 +24,31 @@ export default async function handler(req, res) {
 
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed' });
+    }
+
+    // Validate API key - check header in a case-insensitive way
+    const apiKeyHeader = Object.keys(req.headers).find(key => key.toLowerCase() === 'x-api-key');
+    const apiKey = apiKeyHeader ? req.headers[apiKeyHeader] : null;
+    const expectedApiKey = process.env.API_KEY;
+    
+    console.log('API Key validation:', {
+        receivedKey: apiKey,
+        expectedKey: expectedApiKey,
+        headerKeys: Object.keys(req.headers),
+        foundHeader: apiKeyHeader,
+        match: apiKey === expectedApiKey
+    });
+    
+    if (!apiKey || apiKey !== expectedApiKey) {
+        console.log('Invalid or missing API key');
+        return res.status(401).json({ 
+            error: 'Unauthorized',
+            message: 'Invalid or missing API key',
+            debug: {
+                hasApiKey: !!apiKey,
+                keyMatch: apiKey === expectedApiKey
+            }
+        });
     }
 
     console.log('Starting subscription verification...');
@@ -64,6 +95,7 @@ export default async function handler(req, res) {
         return res.json({
             active: true,
             plan: subscription.plan,
+            reference: subscription.reference,
             expiryDate: subscription.expiryDate
         });
     } catch (error) {
