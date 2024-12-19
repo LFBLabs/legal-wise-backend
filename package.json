@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Backend service for Legal Wise Summarizer Chrome extension",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "dev": "vercel dev",
     "deploy": "vercel deploy --prod",
@@ -14,6 +15,6 @@
     "crypto": "^1.0.1"
   },
   "engines": {
-    "node": "18.x"
+    "node": "22.x"
   }
 }
