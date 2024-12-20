@@ -7,12 +7,20 @@ export const config = {
 };
 
 export default async function handler(req, res) {
-    // Log all environment variables (except sensitive ones)
+    // Log all request details
+    console.log('Request details:', {
+        method: req.method,
+        url: req.url,
+        headers: req.headers,
+        body: req.body,
+        query: req.query
+    });
+
+    // Log environment variables (except sensitive ones)
     console.log('Environment variables:', {
         hasMongoDb: !!process.env.MONGODB_URI,
         hasPaystackKey: !!process.env.PAYSTACK_SECRET_KEY,
         hasApiKey: !!process.env.API_KEY,
-        apiKeyValue: process.env.API_KEY,
         nodeEnv: process.env.NODE_ENV,
         vercelEnv: process.env.VERCEL_ENV
     });
