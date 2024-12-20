@@ -4,7 +4,7 @@
     "builds": [
         {
             "src": "api/**/*.js",
-            "use": "@vercel/node@3.0.0",
+            "use": "@vercel/node",
             "config": {
                 "maxDuration": 10,
                 "memory": 1024
@@ -19,7 +19,7 @@
             "headers": {
                 "Access-Control-Allow-Origin": "*",
                 "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-                "Access-Control-Allow-Headers": "X-Requested-With, Content-Type, Accept, Authorization",
+                "Access-Control-Allow-Headers": "X-Requested-With, Content-Type, Accept, Authorization, X-API-Key",
                 "Access-Control-Allow-Credentials": "true"
             },
             "continue": true
